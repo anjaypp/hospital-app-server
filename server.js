@@ -88,23 +88,31 @@ const server = http.createServer((req, res) => {
                 });
             });
         }
-            else if (req.method === 'DELETE' && req.url.startsWith('/hospitals')) {
+        else if (req.method === 'DELETE' && req.url.startsWith('/hospitals/')) {
+            // DELETE: Remove a hospital by name
+            const hospitalName = decodeURIComponent(req.url.split('/')[2]);
             fs.readFile(dataPath, 'utf8', (err, data) => {
                 if (err) {
                     res.writeHead(500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ message: 'Server error' }));
                 } else {
                     const hospitals = JSON.parse(data).hospitals;
-                    hospitals.pop();
-                    fs.writeFile(dataPath, JSON.stringify({ hospitals }), (err) => {
-                        if (err) {
-                            res.writeHead(500, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ message: 'Failed to delete' }));
-                        } else {
-                            res.writeHead(200, { 'Content-Type': 'application/json' });
-                            res.end(JSON.stringify({ message: 'Hospital deleted successfully' }));
-                        }
-                    });
+                    const hospitalIndex = hospitals.findIndex(h => h.name === hospitalName);
+                    if (hospitalIndex !== -1) {
+                        hospitals.splice(hospitalIndex, 1);  // Remove the hospital
+                        fs.writeFile(dataPath, JSON.stringify({ hospitals }), (err) => {
+                            if (err) {
+                                res.writeHead(500, { 'Content-Type': 'application/json' });
+                                res.end(JSON.stringify({ message: 'Failed to delete' }));
+                            } else {
+                                res.writeHead(200, { 'Content-Type': 'application/json' });
+                                res.end(JSON.stringify({ message: 'Hospital deleted' }));
+                            }
+                        });
+                    } else {
+                        res.writeHead(404, { 'Content-Type': 'application/json' });
+                        res.end(JSON.stringify({ message: 'Hospital not found' }));
+                    }
                 }
             });
         }
